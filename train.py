@@ -26,6 +26,7 @@ class Conv(chainer.Chain):
         with self.init_scope():
             for i in range(n_layers):
                 setattr(self, "c"+str(i), L.Convolution2D(None,n_units, ksize=3, pad=1))
+                setattr(self, "bn"+str(i), L.BatchNormalization(n_units))
             self.l = L.Linear(None,n_out)
         self.n_units = n_units
         self.n_out = n_out
@@ -34,7 +35,7 @@ class Conv(chainer.Chain):
     def predict(self, x):
         h = x
         for i in range(self.n_layers):
-            h = F.relu(getattr(self,"c"+str(i))(h))
+            h = F.relu(getattr(self,"bn"+str(i))(getattr(self,"c"+str(i))(h)))
         return self.l(h)
 
     def __call__(self, x, t):
