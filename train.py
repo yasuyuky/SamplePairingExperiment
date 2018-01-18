@@ -44,6 +44,45 @@ class Conv(chainer.Chain):
         return loss
 
 
+class MobileNetsModule(chainer.Chain):
+    def __init__(self, n_units=128):
+        super(MobileNetsModule, self).__init__()
+        with self.init_scope():
+            self.dw = L.DepthwiseConvolution2D(None,1, ksize=3, pad=1)
+            self.bn1 = L.BatchNormalization(n_units)
+            self.pw = L.Convolution2D(None,n_units, ksize=1)
+            self.bn2 = L.BatchNormalization(n_units)
+
+    def __call__(self, x):
+        h = F.relu(self.bn1(self.dw(x)))
+        return F.relu(self.bn2(self.pw(h)))
+
+
+class Separables(chainer.Chain):
+    def __init__(self, n_out, n_units=128, n_layers=10):
+        super(Separables, self).__init__()
+        with self.init_scope():
+            self.c0 = L.Convolution2D(None,n_units, ksize=3, pad=1)
+            self.b0 = L.BatchNormalization(n_units)
+            for i in range(1, n_layers):
+                setattr(self, "mo"+str(i), MobileNetsModule(n_units))
+            self.l = L.Linear(None,n_out)
+        self.n_units = n_units
+        self.n_out = n_out
+        self.n_layers = n_layers
+
+    def predict(self, x):
+        h = F.relu(self.b0(self.c0(x)))
+        for i in range(1, self.n_layers):
+            h = getattr(self,"mo"+str(i))(h)
+        return self.l(h)
+
+    def __call__(self, x, t):
+        loss = F.softmax_cross_entropy(self.predict(x), t)
+        chainer.report({'loss': loss/t.shape[0]}, self)
+        return loss
+
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-S", "--sample_pairing", action="store_true", default=False)
