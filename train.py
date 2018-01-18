@@ -87,6 +87,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-S", "--sample_pairing", action="store_true", default=False)
     parser.add_argument("--model_path", default='model.npz')
+    parser.add_argument("--separable", default=False, action="store_true")
     parser.add_argument("-e", "--epoch", type=int, default=10)
     parser.add_argument("-b", "--batch", type=int, default=500)
     parser.add_argument("--store", default="result")
@@ -116,7 +117,7 @@ def train(args):
         eval_iterator = SerialIterator(eval_set, args.batch, repeat=False)
     with rangelog("creating model") as logger:
         logger.info('GPU: {}'.format(args.device))
-        model = Conv(10)
+        model = Separables(10) if args.separable else Conv(10)
         chainer.cuda.get_device_from_id(args.device).use()
         model.to_gpu(args.device)
     with rangelog("creating optimizer"):
