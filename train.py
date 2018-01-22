@@ -2,6 +2,7 @@
 
 import argparse
 import logging
+import json
 
 import matplotlib
 matplotlib.use('Agg') # noqa / this should be before numpy/chainer
@@ -136,6 +137,12 @@ def train(args):
         trainer.extend(extensions.LogReport())
         trainer.extend(SourceBackup())
         trainer.extend(ArgumentBackup(args))
+        try:
+            slack = json.load("slack.json")
+        except:
+            pass
+        else:
+            trainer.extend(SlackPost(slack.token, slack.channel))
         trainer.extend(extensions.PrintReport(['epoch']+args.report_keys))
         trainer.extend(extensions.ProgressBar(update_interval=1))
         trainer.extend(extensions.PlotReport(args.report_keys, 'epoch',
