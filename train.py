@@ -138,11 +138,11 @@ def train(args):
         trainer.extend(SourceBackup())
         trainer.extend(ArgumentBackup(args))
         try:
-            slack = json.load("slack.json")
-        except:
-            pass
+            slack = json.load(open("slack.json"))
+        except Exception as e:
+            logger.warn("Error {}".format(e))
         else:
-            trainer.extend(SlackPost(slack.token, slack.channel))
+            trainer.extend(SlackPost(slack["token"], slack["channel"]))
         trainer.extend(extensions.PrintReport(['epoch']+args.report_keys))
         trainer.extend(extensions.ProgressBar(update_interval=1))
         trainer.extend(extensions.PlotReport(args.report_keys, 'epoch',
